@@ -892,16 +892,17 @@
                         delete mole.dataset.timeoutId;
                     }
                     
-                    // Visual feedback
+                    // Immediately hide the mole to prevent glitching
+                    mole.classList.remove('visible');
                     mole.classList.add('hit');
+                    mole.setAttribute('aria-hidden', 'true');
                     
                     // Score popup
                     this.showScorePopup(hole, points);
                     
-                    // Clean up after animation
+                    // Clean up hit animation after it completes
                     setTimeout(() => {
-                        mole.classList.remove('visible', 'hit');
-                        mole.setAttribute('aria-hidden', 'true');
+                        mole.classList.remove('hit');
                     }, 300);
                     
                     // Level progression
