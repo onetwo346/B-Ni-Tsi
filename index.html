@@ -102,13 +102,12 @@
             background: #8B4513;
             border-radius: 50% 50% 45% 45%;
             position: absolute;
-            bottom: calc(var(--mole) * -1.2);
+            bottom: calc(var(--mole) * -1.1);
             left: 50%;
             transform: translateX(-50%);
             transition: bottom 0.3s ease-in-out;
             cursor: pointer;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-            overflow: hidden;
         }
 
         .mole::before {
@@ -145,11 +144,7 @@
         @keyframes hitAnimation {
             0% { transform: translateX(-50%) scale(1); }
             50% { transform: translateX(-50%) scale(1.2); background: #ff6b6b; }
-            100% { 
-                transform: translateX(-50%) scale(1); 
-                bottom: calc(var(--mole) * -1.2); 
-                opacity: 0;
-            }
+            100% { transform: translateX(-50%) scale(1); bottom: calc(var(--mole) * -1.1); }
         }
 
         .controls {
@@ -552,31 +547,31 @@
             }
             
             .game-container {
-                padding: 20px 15px;
+                padding: 15px 10px;
                 margin: 10px;
                 width: calc(100vw - 20px);
                 max-width: none;
             }
             
             .game-info {
-                margin-bottom: 20px;
-                gap: 10px;
+                margin-bottom: 15px;
+                gap: 8px;
             }
             
             .info-box {
-                padding: 10px 15px;
-                min-width: 80px;
+                padding: 8px 12px;
+                min-width: 70px;
             }
             
             .info-value {
-                font-size: 1.2rem;
+                font-size: 1.1rem;
             }
             
             .game-board {
                 grid-template-columns: repeat(3, 80px);
                 grid-template-rows: repeat(3, 80px);
-                gap: 12px;
-                margin: 20px auto;
+                gap: 10px;
+                margin: 15px auto;
             }
             
             .hole {
@@ -594,42 +589,32 @@
             }
             
             .difficulty-section {
-                margin: 15px 0;
-                padding: 10px;
+                margin: 10px 0;
+                padding: 8px;
             }
             
             .difficulty-options {
-                gap: 6px;
+                gap: 5px;
             }
             
             .difficulty-btn {
-                padding: 6px 12px;
+                padding: 5px 10px;
                 font-size: 0.7rem;
             }
             
             .controls {
-                margin-top: 15px;
+                margin-top: 10px;
                 display: flex;
                 flex-direction: column;
-                gap: 10px;
+                gap: 8px;
                 align-items: center;
             }
             
             .btn {
-                padding: 12px 25px;
-                font-size: 1rem;
-                margin: 5px;
-                width: 150px;
-            }
-            
-            /* Ensure proper z-index and positioning */
-            .game-screen {
-                position: relative;
-                z-index: 1;
-            }
-            
-            .game-over {
-                z-index: 1000;
+                padding: 10px 20px;
+                font-size: 0.9rem;
+                margin: 3px;
+                width: 140px;
             }
         }
     </style>
@@ -877,7 +862,6 @@
                 if (mole) {
                     mole.classList.remove('visible');
                     mole.setAttribute('aria-hidden', 'true');
-                    mole.style.opacity = '1'; // Reset opacity
                     this.activeMoles.delete(holeIndex);
                     
                     // Clear any pending timeout
@@ -899,9 +883,17 @@
                     const points = this.level * 10;
                     this.score += points;
                     
+                    // Remove from active moles immediately
+                    this.activeMoles.delete(holeIndex);
+                    
+                    // Clear any pending timeout for this mole
+                    if (mole.dataset.timeoutId) {
+                        clearTimeout(mole.dataset.timeoutId);
+                        delete mole.dataset.timeoutId;
+                    }
+                    
                     // Visual feedback
                     mole.classList.add('hit');
-                    this.activeMoles.delete(holeIndex);
                     
                     // Score popup
                     this.showScorePopup(hole, points);
@@ -909,7 +901,7 @@
                     // Clean up after animation
                     setTimeout(() => {
                         mole.classList.remove('visible', 'hit');
-                        mole.style.opacity = '1'; // Reset opacity
+                        mole.setAttribute('aria-hidden', 'true');
                     }, 300);
                     
                     // Level progression
