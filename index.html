@@ -1,0 +1,1264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BƆ Ni Tsi</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --cell: clamp(70px, 9vw, 120px);
+            --gap: clamp(8px, 1.2vw, 16px);
+            --mole: calc(var(--cell) * 0.6);
+            --container-max: min(90vw, 900px);
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #4a90e2, #7b68ee);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+
+        .game-container {
+            text-align: center;
+            background: rgba(255, 255, 255, 0.1);
+            -webkit-backdrop-filter: blur(10px);
+            backdrop-filter: blur(10px);
+            /* Fallback for browsers without backdrop-filter support */
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            width: var(--container-max);
+            margin: 20px auto;
+        }
+
+        h1 {
+            margin-bottom: 20px;
+            font-size: 2.5rem;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .game-info {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 30px;
+            gap: 20px;
+        }
+
+        .info-box {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 15px 20px;
+            border-radius: 15px;
+            min-width: 120px;
+        }
+
+        .info-label {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            margin-bottom: 5px;
+        }
+
+        .info-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        .game-board {
+            display: grid;
+            grid-template-columns: repeat(3, var(--cell));
+            grid-template-rows: repeat(3, var(--cell));
+            gap: var(--gap);
+            margin: 30px auto;
+            justify-content: center;
+        }
+
+        .hole {
+            width: var(--cell);
+            height: var(--cell);
+            background: radial-gradient(circle, #2c1810, #1a0e08);
+            border-radius: 50%;
+            position: relative;
+            overflow: hidden;
+            cursor: pointer;
+            box-shadow: inset 0 10px 20px rgba(0, 0, 0, 0.5);
+            border: 4px solid #654321;
+        }
+
+        .mole {
+            width: var(--mole);
+            height: var(--mole);
+            background: #8B4513;
+            border-radius: 50% 50% 45% 45%;
+            position: absolute;
+            bottom: calc(var(--mole) * -1);
+            left: 50%;
+            transform: translateX(-50%);
+            transition: bottom 0.3s ease-in-out;
+            cursor: pointer;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .mole::before {
+            content: '';
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            background: black;
+            border-radius: 50%;
+            top: 25px;
+            left: 20px;
+            box-shadow: 20px 0 black;
+        }
+
+        .mole::after {
+            content: '';
+            position: absolute;
+            width: 16px;
+            height: 8px;
+            background: black;
+            border-radius: 50%;
+            top: 40px;
+            left: 32px;
+        }
+
+        .mole.visible {
+            bottom: 10px;
+        }
+
+        .mole.hit {
+            animation: hitAnimation 0.3s ease-out;
+        }
+
+        @keyframes hitAnimation {
+            0% { transform: translateX(-50%) scale(1); }
+            50% { transform: translateX(-50%) scale(1.2); background: #ff6b6b; }
+            100% { transform: translateX(-50%) scale(1); bottom: calc(var(--mole) * -1); }
+        }
+
+        .controls {
+            margin-top: 20px;
+        }
+
+        .btn {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.1rem;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 0 10px;
+            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 107, 107, 0.4);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn:disabled {
+            background: #666;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .game-over {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .game-over-content {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .game-over h2 {
+            font-size: 2rem;
+            margin-bottom: 20px;
+        }
+
+        .final-score {
+            font-size: 3rem;
+            color: #ffd700;
+            margin: 20px 0;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        .score-popup {
+            position: absolute;
+            font-size: 2rem;
+            font-weight: bold;
+            color: #ffd700;
+            pointer-events: none;
+            z-index: 100;
+            animation: scorePopup 1s ease-out forwards;
+        }
+
+        @keyframes scorePopup {
+            0% {
+                opacity: 1;
+                transform: translateY(0) scale(0.8);
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(-50px) scale(1.2);
+            }
+        }
+
+        /* Intro Screen Styles */
+        .intro-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #4a90e2, #7b68ee);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 3000;
+            color: white;
+            cursor: pointer;
+        }
+
+        .intro-content {
+            text-align: center;
+            background: rgba(255, 255, 255, 0.1);
+            -webkit-backdrop-filter: blur(10px);
+            backdrop-filter: blur(10px);
+            /* Fallback for browsers without backdrop-filter support */
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            padding: 40px 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            max-width: 500px;
+            width: 90%;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .intro-content:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .intro-title {
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+            animation: pulse 2s infinite;
+            line-height: 1.2;
+        }
+
+        .intro-subtitle {
+            font-size: 1.1rem;
+            margin-bottom: 30px;
+            opacity: 0.9;
+            line-height: 1.4;
+        }
+
+        .tap-instruction {
+            font-size: 1rem;
+            margin-top: 20px;
+            padding: 12px 25px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 25px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            animation: bounce 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+            40% { transform: translateY(-10px); }
+            60% { transform: translateY(-5px); }
+        }
+
+        /* Options Screen Styles */
+        .options-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #4a90e2, #7b68ee);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            color: white;
+        }
+
+        .options-content {
+            text-align: center;
+            background: rgba(255, 255, 255, 0.1);
+            -webkit-backdrop-filter: blur(10px);
+            backdrop-filter: blur(10px);
+            /* Fallback for browsers without backdrop-filter support */
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            max-width: 500px;
+            width: 90%;
+        }
+
+        .options-title {
+            font-size: 3rem;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .options-subtitle {
+            font-size: 1.2rem;
+            margin-bottom: 30px;
+            opacity: 0.9;
+        }
+
+        .upload-section {
+            margin: 30px 0;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            border: 2px dashed rgba(255, 255, 255, 0.3);
+        }
+
+        .upload-label {
+            display: block;
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+            font-weight: bold;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .upload-btn {
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            font-size: 1rem;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 10px;
+            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+        }
+
+        .upload-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
+        }
+
+        .skip-btn {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            font-size: 1rem;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 10px;
+            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
+        }
+
+        .skip-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 107, 107, 0.4);
+        }
+
+        .preview-image {
+            max-width: 100px;
+            max-height: 100px;
+            border-radius: 50%;
+            margin: 15px auto;
+            display: block;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .format-info {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            margin-top: 10px;
+        }
+
+        .button-container {
+            margin-top: 30px;
+        }
+
+        .back-to-menu-btn {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+        }
+
+        .quit-btn {
+            background: linear-gradient(45deg, #e74c3c, #c0392b);
+            box-shadow: 0 4px 15px rgba(231, 76, 60, 0.3);
+        }
+
+        .quit-btn:hover {
+            box-shadow: 0 6px 20px rgba(231, 76, 60, 0.4);
+        }
+
+        .difficulty-section {
+            margin: 20px 0;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+        }
+
+        .difficulty-label {
+            display: block;
+            margin-bottom: 10px;
+            font-size: 1rem;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .difficulty-options {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .difficulty-btn {
+            background: linear-gradient(45deg, #3498db, #2980b9);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            font-size: 0.8rem;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 3px 10px rgba(52, 152, 219, 0.3);
+        }
+
+        .difficulty-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 15px rgba(52, 152, 219, 0.4);
+        }
+
+        .difficulty-btn.selected {
+            background: linear-gradient(45deg, #f39c12, #e67e22);
+            box-shadow: 0 3px 10px rgba(243, 156, 18, 0.3);
+        }
+
+        .difficulty-btn.selected:hover {
+            box-shadow: 0 4px 15px rgba(243, 156, 18, 0.4);
+        }
+
+        .hidden {
+            display: none;
+        }
+        
+        /* Focus indicators for accessibility */
+        .intro-screen:focus,
+        .mole:focus,
+        button:focus {
+            outline: 3px solid #ffd700;
+            outline-offset: 2px;
+        }
+        
+        /* High contrast focus for better visibility */
+        @media (prefers-contrast: high) {
+            .intro-screen:focus,
+            .mole:focus,
+            button:focus {
+                outline: 3px solid #ffffff;
+                outline-offset: 2px;
+            }
+        }
+
+        .game-screen {
+            display: none;
+        }
+
+        .game-screen.active {
+            display: block;
+        }
+
+        @media (max-width: 600px) {
+            .intro-content {
+                padding: 30px 20px;
+                margin: 20px;
+            }
+            
+            .intro-title {
+                font-size: 2rem;
+                line-height: 1.2;
+            }
+            
+            .intro-subtitle {
+                font-size: 1rem;
+                line-height: 1.4;
+            }
+            
+            .tap-instruction {
+                font-size: 0.9rem;
+                padding: 10px 20px;
+                margin-top: 15px;
+            }
+            
+            .options-content {
+                padding: 30px 20px;
+            }
+            
+            .options-title {
+                font-size: 2.5rem;
+            }
+            
+            .game-board {
+                grid-template-columns: repeat(3, 90px);
+                grid-template-rows: repeat(3, 90px);
+                gap: 15px;
+            }
+            
+            .hole {
+                width: 90px;
+                height: 90px;
+            }
+            
+            .mole {
+                width: 60px;
+                height: 60px;
+            }
+            
+            /* Improve touch targets on mobile */
+            .hole {
+                min-width: 44px;
+                min-height: 44px;
+            }
+            
+            .mole {
+                min-width: 44px;
+                min-height: 44px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Intro Screen -->
+    <div class="intro-screen" id="introScreen" onclick="enterOptions()" role="button" tabindex="0" aria-label="Enter game options" onkeydown="handleEnterKey(event, enterOptions)">
+        <div class="intro-content">
+            <h1 class="intro-title" role="heading" aria-level="1">🔨 BƆ Ni Tsi 🔨</h1>
+            <p class="intro-subtitle">Welcome to the ultimate head hitting game!</p>
+            <div class="tap-instruction" role="button" aria-label="Press Enter or click to continue">
+                👆 Tap anywhere to enter options
+            </div>
+        </div>
+    </div>
+
+    <!-- Options Screen -->
+    <div class="options-screen" id="optionsScreen">
+        <div class="options-content">
+            <h1 class="options-title">🔨 BƆ Ni Tsi 🔨</h1>
+            <p class="options-subtitle">Customize your head hitting experience!</p>
+            
+            <div class="upload-section">
+                <label class="upload-label">Upload your own head image (optional):</label>
+                <input type="file" id="moleImageInput" class="file-input" accept="image/*" aria-label="Upload custom head image">
+                <button class="upload-btn" onclick="document.getElementById('moleImageInput').click()" aria-label="Choose image file">
+                    📁 Choose Image
+                </button>
+                <div id="imagePreview"></div>
+                <p class="format-info">
+                    Supported formats: JPG, PNG, GIF
+                </p>
+            </div>
+            
+            <div class="button-container">
+                <button class="upload-btn hidden" id="playWithImageBtn" onclick="startGameWithImage()">
+                    🎮 Play with Custom Head
+                </button>
+                <button class="skip-btn" onclick="startGameWithDefault()">
+                    ⚡ Skip & Play Now
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Screen -->
+    <div class="game-screen" id="gameScreen">
+        <div class="game-container">
+            <h1>🔨 BƆ Ni Tsi 🔨</h1>
+            
+            <div class="game-info">
+                <div class="info-box">
+                    <div class="info-label">Score</div>
+                    <div class="info-value" id="score">0</div>
+                </div>
+                <div class="info-box">
+                    <div class="info-label">Time</div>
+                    <div class="info-value" id="timer">30</div>
+                </div>
+                <div class="info-box">
+                    <div class="info-label">Level</div>
+                    <div class="info-value" id="level">1</div>
+                </div>
+            </div>
+
+            <div class="game-board" id="gameBoard" role="grid" aria-label="Game board with 9 holes">
+                <!-- Holes will be generated by JavaScript -->
+            </div>
+
+            <div class="difficulty-section">
+                <label class="difficulty-label">Difficulty:</label>
+                <div class="difficulty-options">
+                    <button class="difficulty-btn selected" id="easyBtn" onclick="selectDifficulty('easy')">
+                        🐌 Easy
+                    </button>
+                    <button class="difficulty-btn" id="mediumBtn" onclick="selectDifficulty('medium')">
+                        🏃 Medium
+                    </button>
+                    <button class="difficulty-btn" id="hardBtn" onclick="selectDifficulty('hard')">
+                        ⚡ Hard
+                    </button>
+                </div>
+            </div>
+
+            <div class="controls">
+                <button class="btn hidden" id="pauseBtn" onclick="togglePause()" aria-label="Pause or resume game">Pause</button>
+                <button class="btn quit-btn" onclick="quitToMenu()" aria-label="Quit to main menu">Quit</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="game-over" id="gameOver">
+        <div class="game-over-content">
+            <h2>Game Over!</h2>
+            <div class="final-score" id="finalScore">0</div>
+            <p>Great job hitting those heads!</p>
+            <div class="button-container">
+                <button class="btn" onclick="resetGame()">Play Again</button>
+                <button class="btn back-to-menu-btn" onclick="backToMenu()">Back to Menu</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class WhackAMoleGame {
+            constructor() {
+                this.score = 0;
+                this.timeLeft = 30;
+                this.level = 1;
+                this.gameActive = false;
+                this.isPaused = false;
+                this.moleInterval = null;
+                this.gameTimer = null;
+                this.activeMoles = new Set();
+                this.customMoleImage = null;
+                this.selectedDifficulty = 'easy';
+                this.difficultySettings = {
+                    easy: {
+                        1: { interval: 1500, duration: 2500 },
+                        2: { interval: 1300, duration: 2200 },
+                        3: { interval: 1100, duration: 2000 },
+                        4: { interval: 900, duration: 1800 },
+                        5: { interval: 700, duration: 1600 }
+                    },
+                    medium: {
+                        1: { interval: 1200, duration: 2000 },
+                        2: { interval: 1000, duration: 1800 },
+                        3: { interval: 800, duration: 1600 },
+                        4: { interval: 600, duration: 1400 },
+                        5: { interval: 400, duration: 1200 }
+                    },
+                    hard: {
+                        1: { interval: 800, duration: 1200 },
+                        2: { interval: 600, duration: 1000 },
+                        3: { interval: 400, duration: 800 },
+                        4: { interval: 300, duration: 600 },
+                        5: { interval: 200, duration: 400 }
+                    }
+                };
+                
+                this.initializeBoard();
+                this.updateDisplay();
+            }
+
+            initializeBoard() {
+                const board = document.getElementById('gameBoard');
+                board.innerHTML = '';
+                
+                for (let i = 0; i < 9; i++) {
+                    const hole = document.createElement('div');
+                    hole.className = 'hole';
+                    hole.dataset.index = i;
+                    hole.setAttribute('role', 'gridcell');
+                    hole.setAttribute('aria-label', `Hole ${i + 1}`);
+                    
+                    const mole = document.createElement('div');
+                    mole.className = 'mole';
+                    mole.setAttribute('role', 'button');
+                    mole.setAttribute('tabindex', '0');
+                    mole.setAttribute('aria-label', `Mole in hole ${i + 1}`);
+                    mole.addEventListener('click', () => this.whackMole(i));
+                    mole.addEventListener('keydown', (e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            this.whackMole(i);
+                        }
+                    });
+                    
+                    // Add custom image if available
+                    if (this.customMoleImage) {
+                        mole.style.background = `url(${this.customMoleImage}) center/cover`;
+                        mole.style.borderRadius = '50%';
+                        // Reset default mole styling when using custom image
+                        mole.style.setProperty('--mole-bg', 'transparent');
+                    } else {
+                        // Reset to default styling
+                        mole.style.background = '';
+                        mole.style.removeProperty('--mole-bg');
+                    }
+                    
+                    hole.appendChild(mole);
+                    board.appendChild(hole);
+                }
+            }
+
+            startGame() {
+                this.gameActive = true;
+                this.isPaused = false;
+                this.score = 0;
+                this.timeLeft = 30;
+                this.level = 1;
+                this.activeMoles.clear();
+                
+                // Show pause button since game is starting
+                document.getElementById('pauseBtn').classList.remove('hidden');
+                
+                this.updateDisplay();
+                this.startMoleSpawning();
+                this.startTimer();
+            }
+
+            startMoleSpawning() {
+                const spawnMole = () => {
+                    if (!this.gameActive || this.isPaused) return;
+                    
+                    const availableHoles = [];
+                    for (let i = 0; i < 9; i++) {
+                        if (!this.activeMoles.has(i)) {
+                            availableHoles.push(i);
+                        }
+                    }
+                    
+                    if (availableHoles.length > 0) {
+                        const randomHole = availableHoles[Math.floor(Math.random() * availableHoles.length)];
+                        this.showMole(randomHole);
+                    }
+                };
+
+                const currentSettings = this.difficultySettings[this.selectedDifficulty][this.level] || this.difficultySettings[this.selectedDifficulty][5];
+                this.moleInterval = setInterval(spawnMole, currentSettings.interval);
+            }
+
+            showMole(holeIndex) {
+                const mole = document.querySelector(`[data-index="${holeIndex}"] .mole`);
+                if (mole && !this.activeMoles.has(holeIndex)) {
+                    this.activeMoles.add(holeIndex);
+                    mole.classList.add('visible');
+                    mole.setAttribute('aria-hidden', 'false');
+                    
+                    const currentSettings = this.difficultySettings[this.selectedDifficulty][this.level] || this.difficultySettings[this.selectedDifficulty][5];
+                    const timeoutId = setTimeout(() => {
+                        // Check if game is still active and mole is still visible
+                        if (this.gameActive && this.activeMoles.has(holeIndex)) {
+                            this.hideMole(holeIndex);
+                        }
+                    }, currentSettings.duration);
+                    
+                    // Store timeout ID for cleanup if needed
+                    mole.dataset.timeoutId = timeoutId;
+                }
+            }
+
+            hideMole(holeIndex) {
+                const mole = document.querySelector(`[data-index="${holeIndex}"] .mole`);
+                if (mole) {
+                    mole.classList.remove('visible');
+                    mole.setAttribute('aria-hidden', 'true');
+                    this.activeMoles.delete(holeIndex);
+                    
+                    // Clear any pending timeout
+                    if (mole.dataset.timeoutId) {
+                        clearTimeout(mole.dataset.timeoutId);
+                        delete mole.dataset.timeoutId;
+                    }
+                }
+            }
+
+            whackMole(holeIndex) {
+                if (!this.gameActive || this.isPaused || !this.activeMoles.has(holeIndex)) return;
+                
+                const mole = document.querySelector(`[data-index="${holeIndex}"] .mole`);
+                const hole = document.querySelector(`[data-index="${holeIndex}"]`);
+                
+                if (mole && mole.classList.contains('visible')) {
+                    // Score calculation
+                    const points = this.level * 10;
+                    this.score += points;
+                    
+                    // Visual feedback
+                    mole.classList.add('hit');
+                    this.activeMoles.delete(holeIndex);
+                    
+                    // Score popup
+                    this.showScorePopup(hole, points);
+                    
+                    // Clean up after animation
+                    setTimeout(() => {
+                        mole.classList.remove('visible', 'hit');
+                    }, 300);
+                    
+                    // Level progression
+                    if (this.score > 0 && this.score % 100 === 0 && this.level < 5) {
+                        this.levelUp();
+                    }
+                    
+                    this.updateDisplay();
+                }
+            }
+
+            showScorePopup(hole, points) {
+                const popup = document.createElement('div');
+                popup.className = 'score-popup';
+                popup.textContent = `+${points}`;
+                popup.setAttribute('aria-live', 'polite');
+                popup.setAttribute('aria-atomic', 'true');
+                
+                // Use more efficient positioning
+                const rect = hole.getBoundingClientRect();
+                const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+                const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
+                
+                popup.style.left = (rect.left + scrollLeft + rect.width / 2 - 20) + 'px';
+                popup.style.top = (rect.top + scrollTop - 30) + 'px';
+                
+                document.body.appendChild(popup);
+                
+                // Store reference for safe cleanup
+                const timeoutId = setTimeout(() => {
+                    if (popup && popup.parentNode) {
+                        try {
+                            document.body.removeChild(popup);
+                        } catch (e) {
+                            console.warn('Score popup already removed:', e);
+                        }
+                    }
+                }, 1000);
+                
+                // Store timeout ID for potential cleanup
+                popup.dataset.timeoutId = timeoutId;
+            }
+
+            levelUp() {
+                this.level++;
+                clearInterval(this.moleInterval);
+                this.startMoleSpawning();
+                
+                // Show level up notification
+                const notification = document.createElement('div');
+                notification.className = 'level-notification';
+                notification.style.cssText = `
+                    position: fixed;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                    background: linear-gradient(45deg, #ffd700, #ffed4a);
+                    color: #333;
+                    padding: 20px 40px;
+                    border-radius: 15px;
+                    font-size: 1.5rem;
+                    font-weight: bold;
+                    z-index: 999;
+                    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+                `;
+                notification.textContent = `Level ${this.level}!`;
+                notification.setAttribute('aria-live', 'assertive');
+                notification.setAttribute('aria-atomic', 'true');
+                document.body.appendChild(notification);
+                
+                const timeoutId = setTimeout(() => {
+                    if (notification && notification.parentNode) {
+                        try {
+                            document.body.removeChild(notification);
+                        } catch (e) {
+                            console.warn('Level notification already removed:', e);
+                        }
+                    }
+                }, 2000);
+                
+                // Store timeout ID for cleanup
+                notification.dataset.timeoutId = timeoutId;
+            }
+
+            startTimer() {
+                this.gameTimer = setInterval(() => {
+                    if (!this.isPaused) {
+                        this.timeLeft--;
+                        this.updateDisplay();
+                        
+                        if (this.timeLeft <= 0) {
+                            this.endGame();
+                        }
+                    }
+                }, 1000);
+            }
+
+            togglePause() {
+                this.isPaused = !this.isPaused;
+                const pauseBtn = document.getElementById('pauseBtn');
+                pauseBtn.textContent = this.isPaused ? 'Resume' : 'Pause';
+            }
+
+            endGame() {
+                this.gameActive = false;
+                clearInterval(this.moleInterval);
+                clearInterval(this.gameTimer);
+                
+                // Hide all moles and clear timeouts
+                document.querySelectorAll('.mole').forEach(mole => {
+                    mole.classList.remove('visible', 'hit');
+                    mole.setAttribute('aria-hidden', 'true');
+                    // Clear any pending mole timeouts
+                    if (mole.dataset.timeoutId) {
+                        clearTimeout(mole.dataset.timeoutId);
+                        delete mole.dataset.timeoutId;
+                    }
+                });
+                this.activeMoles.clear();
+                
+                // Clean up any remaining score popups and level notifications
+                document.querySelectorAll('.score-popup, .level-notification').forEach(element => {
+                    if (element.dataset.timeoutId) {
+                        clearTimeout(element.dataset.timeoutId);
+                    }
+                    if (element.parentNode) {
+                        element.parentNode.removeChild(element);
+                    }
+                });
+                
+                // Show game over screen
+                document.getElementById('finalScore').textContent = this.score;
+                document.getElementById('gameOver').style.display = 'flex';
+            }
+
+            resetGame() {
+                document.getElementById('gameOver').style.display = 'none';
+                document.getElementById('pauseBtn').classList.add('hidden');
+                document.getElementById('pauseBtn').textContent = 'Pause';
+                
+                this.gameActive = false;
+                this.isPaused = false;
+                this.score = 0;
+                this.timeLeft = 30;
+                this.level = 1;
+                this.activeMoles.clear();
+                
+                clearInterval(this.moleInterval);
+                clearInterval(this.gameTimer);
+                
+                // Clean up all moles and their timeouts
+                document.querySelectorAll('.mole').forEach(mole => {
+                    mole.classList.remove('visible', 'hit');
+                    mole.setAttribute('aria-hidden', 'true');
+                    if (mole.dataset.timeoutId) {
+                        clearTimeout(mole.dataset.timeoutId);
+                        delete mole.dataset.timeoutId;
+                    }
+                });
+                
+                // Clean up any remaining score popups and level notifications
+                document.querySelectorAll('.score-popup, .level-notification').forEach(element => {
+                    if (element.dataset.timeoutId) {
+                        clearTimeout(element.dataset.timeoutId);
+                    }
+                    if (element.parentNode) {
+                        element.parentNode.removeChild(element);
+                    }
+                });
+                
+                this.updateDisplay();
+            }
+
+            updateDisplay() {
+                document.getElementById('score').textContent = this.score;
+                document.getElementById('timer').textContent = this.timeLeft;
+                document.getElementById('level').textContent = this.level;
+            }
+        }
+
+        // Initialize game
+        let game;
+
+        // Game auto-starts when reaching game screen, no need for standalone startGame function
+
+        function togglePause() {
+            if (game) {
+                game.togglePause();
+            }
+        }
+
+        function resetGame() {
+            if (game) {
+                game.resetGame();
+            }
+        }
+        
+        // Keyboard event handler for accessibility
+        function handleEnterKey(event, callback) {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                callback();
+            }
+        }
+
+        // Global variables for intro screen
+        let customMoleImage = null;
+
+        function selectDifficulty(difficulty) {
+            if (game) {
+                game.selectedDifficulty = difficulty;
+                
+                // Update button styles
+                document.querySelectorAll('.difficulty-btn').forEach(btn => {
+                    btn.classList.remove('selected');
+                });
+                document.getElementById(difficulty + 'Btn').classList.add('selected');
+                
+                // If game is running, restart mole spawning with new difficulty
+                if (game.gameActive && !game.isPaused) {
+                    clearInterval(game.moleInterval);
+                    game.startMoleSpawning();
+                }
+            }
+        }
+
+        // Image upload handling with validation
+        document.getElementById('moleImageInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                // Validate file type
+                const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+                if (!validTypes.includes(file.type)) {
+                    alert('Please select a valid image file (JPG, PNG, GIF, or WebP)');
+                    this.value = '';
+                    return;
+                }
+                
+                // Validate file size (max 5MB)
+                const maxSize = 5 * 1024 * 1024; // 5MB in bytes
+                if (file.size > maxSize) {
+                    alert('Image file is too large. Please select an image smaller than 5MB.');
+                    this.value = '';
+                    return;
+                }
+                
+                const reader = new FileReader();
+                
+                reader.onload = function(e) {
+                    // Validate image dimensions
+                    const img = new Image();
+                    img.onload = function() {
+                        // Recommend reasonable dimensions
+                        if (this.width > 2000 || this.height > 2000) {
+                            if (!confirm('Image is quite large. This may affect performance. Continue anyway?')) {
+                                document.getElementById('moleImageInput').value = '';
+                                return;
+                            }
+                        }
+                        
+                        customMoleImage = e.target.result;
+                        showImagePreview(customMoleImage);
+                        document.getElementById('playWithImageBtn').classList.remove('hidden');
+                    };
+                    
+                    img.onerror = function() {
+                        alert('Failed to load image. Please try a different file.');
+                        document.getElementById('moleImageInput').value = '';
+                    };
+                    
+                    img.src = e.target.result;
+                };
+                
+                reader.onerror = function() {
+                    alert('Error reading file. Please try again.');
+                    document.getElementById('moleImageInput').value = '';
+                };
+                
+                reader.readAsDataURL(file);
+            }
+        });
+
+        function showImagePreview(imageSrc) {
+            const preview = document.getElementById('imagePreview');
+            preview.innerHTML = `
+                <img src="${imageSrc}" alt="Mole Preview" class="preview-image">
+                <p class="format-info">Your custom mole is ready!</p>
+            `;
+        }
+
+        function startGameWithImage() {
+            if (customMoleImage) {
+                hideOptionsScreen();
+                initializeGameWithCustomImage(customMoleImage);
+            }
+        }
+
+        function startGameWithDefault() {
+            hideOptionsScreen();
+            initializeGameWithCustomImage(null);
+        }
+
+        function enterOptions() {
+            document.getElementById('introScreen').style.display = 'none';
+            document.getElementById('optionsScreen').style.display = 'flex';
+        }
+
+        function hideOptionsScreen() {
+            document.getElementById('optionsScreen').style.display = 'none';
+            document.getElementById('gameScreen').classList.add('active');
+            // Auto-start the game when reaching the game screen
+            setTimeout(() => {
+                if (game) {
+                    game.startGame();
+                }
+            }, 100); // Small delay to ensure screen is fully loaded
+        }
+
+        function initializeGameWithCustomImage(imageSrc) {
+            // Always create a fresh game instance to avoid state issues
+            game = new WhackAMoleGame();
+            game.customMoleImage = imageSrc;
+            game.initializeBoard();
+        }
+
+        function quitToMenu() {
+            // Stop the game if it's running
+            if (game && game.gameActive) {
+                game.gameActive = false;
+                clearInterval(game.moleInterval);
+                clearInterval(game.gameTimer);
+                
+                // Hide all moles
+                document.querySelectorAll('.mole').forEach(mole => {
+                    mole.classList.remove('visible', 'hit');
+                });
+                game.activeMoles.clear();
+            }
+            
+            // Go back to menu
+            backToMenu();
+        }
+
+        function backToMenu() {
+            // Hide game over screen
+            document.getElementById('gameOver').style.display = 'none';
+            
+            // Show intro screen
+            document.getElementById('introScreen').style.display = 'flex';
+            document.getElementById('optionsScreen').style.display = 'none';
+            document.getElementById('gameScreen').classList.remove('active');
+            
+            // Reset game state with proper cleanup
+            if (game) {
+                game.gameActive = false;
+                game.isPaused = false;
+                game.score = 0;
+                game.timeLeft = 30;
+                game.level = 1;
+                game.activeMoles.clear();
+                
+                clearInterval(game.moleInterval);
+                clearInterval(game.gameTimer);
+                
+                // Clean up all moles and their timeouts
+                document.querySelectorAll('.mole').forEach(mole => {
+                    mole.classList.remove('visible', 'hit');
+                    mole.setAttribute('aria-hidden', 'true');
+                    if (mole.dataset.timeoutId) {
+                        clearTimeout(mole.dataset.timeoutId);
+                        delete mole.dataset.timeoutId;
+                    }
+                });
+                
+                // Clean up any remaining score popups and level notifications
+                document.querySelectorAll('.score-popup, .level-notification').forEach(element => {
+                    if (element.dataset.timeoutId) {
+                        clearTimeout(element.dataset.timeoutId);
+                    }
+                    if (element.parentNode) {
+                        element.parentNode.removeChild(element);
+                    }
+                });
+                
+                document.getElementById('pauseBtn').classList.add('hidden');
+                document.getElementById('pauseBtn').textContent = 'Pause';
+                
+                game.updateDisplay();
+            }
+            
+            // Reset image upload
+            customMoleImage = null;
+            document.getElementById('moleImageInput').value = '';
+            document.getElementById('imagePreview').innerHTML = '';
+            document.getElementById('playWithImageBtn').classList.add('hidden');
+            
+            // Reset difficulty selection
+            if (game) {
+                game.selectedDifficulty = 'easy';
+                document.querySelectorAll('.difficulty-btn').forEach(btn => {
+                    btn.classList.remove('selected');
+                });
+                document.getElementById('easyBtn').classList.add('selected');
+            }
+        }
+
+        // Initialize the game board on load
+        window.addEventListener('load', () => {
+            // Don't initialize game immediately - wait for user choice
+        });
+    </script>
+</body>
+</html>
